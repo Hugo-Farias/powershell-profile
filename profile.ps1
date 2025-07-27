@@ -36,6 +36,8 @@ function wttr { curl https://wttr.in/planaltina%20goias }
 
 function wd { $pwd.Path }
 
+Set-Alias gg -Value gemini
+
 Set-Alias v -Value nvim
 
 function nvimconfig { nvim "C:\Users\Hugo\AppData\Local\nvim\init.lua" }
