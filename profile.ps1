@@ -175,39 +175,38 @@ function which($name) {
 # Directory Management
 function mkcd { param($dir) mkdir $dir -Force; Set-Location $dir }
 
-function trash($path) {
-    $fullPath = (Resolve-Path -Path $path).Path
-
-    if (Test-Path $fullPath) {
-        $item = Get-Item $fullPath
-
-        if ($item.PSIsContainer) {
-          # Handle directory
-            $parentPath = $item.Parent.FullName
-        } else {
-            # Handle file
-            $parentPath = $item.DirectoryName
-        }
-
-        $shell = New-Object -ComObject 'Shell.Application'
-        $shellItem = $shell.NameSpace($parentPath).ParseName($item.Name)
-
-        if ($item) {
-            $shellItem.InvokeVerb('delete')
-            Write-Host "Item '$fullPath' has been moved to the Recycle Bin."
-        } else {
-            Write-Host "Error: Could not find the item '$fullPath' to trash."
-        }
-    } else {
-        Write-Host "Error: Item '$fullPath' does not exist."
-    }
-}
-
-function jet($name) { & "C:\Users\Hugo\AppData\Local\Programs\Webstorm 2\bin\ltedit.bat" -e $name }
-
-function idea($name) { & "C:\Users\Hugo\AppData\Local\Programs\Webstorm 2\bin\webstorm64.exe" $name }
 
 function tr($name) { Remove-ItemSafely($name) }
+
+Set-Alias trash -Value tr
+
+# function trash($path) {
+#     $fullPath = (Resolve-Path -Path $path).Path
+#
+#     if (Test-Path $fullPath) {
+#         $item = Get-Item $fullPath
+#
+#         if ($item.PSIsContainer) {
+#           # Handle directory
+#             $parentPath = $item.Parent.FullName
+#         } else {
+#             # Handle file
+#             $parentPath = $item.DirectoryName
+#         }
+#
+#         $shell = New-Object -ComObject 'Shell.Application'
+#         $shellItem = $shell.NameSpace($parentPath).ParseName($item.Name)
+#
+#         if ($item) {
+#             $shellItem.InvokeVerb('delete')
+#             Write-Host "Item '$fullPath' has been moved to the Recycle Bin."
+#         } else {
+#             Write-Host "Error: Could not find the item '$fullPath' to trash."
+#         }
+#     } else {
+#         Write-Host "Error: Item '$fullPath' does not exist."
+#     }
+# }
 
 function ddu { ii "C:\ProgramData\chocolatey\bin\Display Driver Uninstaller.exe"}
 
@@ -357,10 +356,6 @@ Register-ArgumentCompleter -CommandName Change-Theme -ParameterName name -Script
         }
 }
 
-function reload-profile {
-    & $profile
-}
-
 function Change-Theme {
     param (
         [Parameter(Mandatory)]
@@ -383,52 +378,65 @@ Invoke-Expression "oh-my-posh init pwsh --config='$poshTheme' | Invoke-Expressio
 # $existingTheme = Select-String -Raw -Path $PROFILE.CurrentUserAllHosts -Pattern "oh-$my-posh init pwsh --config"
 # Invoke-Expression $existingTheme
 
-# Enhanced PowerShell Experience
-# Enhanced PSReadLine Configuration
-$PSReadLineOptions = @{
-    EditMode = 'Windows'
-    HistoryNoDuplicates = $true
-    HistorySearchCursorMovesToEnd = $true
-    Colors = @{
-        Command = '#87CEEB'  # SkyBlue (pastel)
-        Parameter = '#98FB98'  # PaleGreen (pastel)
-        Operator = '#FFB6C1'  # LightPink (pastel)
-        Variable = '#DDA0DD'  # Plum (pastel)
-        String = '#FFDAB9'  # PeachPuff (pastel)
-        Number = '#B0E0E6'  # PowderBlue (pastel)
-        Type = '#F0E68C'  # Khaki (pastel)
-        Comment = '#D3D3D3'  # LightGray (pastel)
-        Keyword = '#8367c7'  # Violet (pastel)
-        Error = '#FF6347'  # Tomato (keeping it close to red for visibility)
-    }
-    PredictionSource = 'History'
-    PredictionViewStyle = 'ListView'
-    BellStyle = 'None'
-}
-Set-PSReadLineOption @PSReadLineOptions
-
-# Custom functions for PSReadLine
-Set-PSReadLineOption -AddToHistoryHandler {
-    param($line)
-    $sensitive = @('password', 'secret', 'token', 'apikey', 'connectionstring')
-    $hasSensitive = $sensitive | Where-Object { $line -match $_ }
-    return ($null -eq $hasSensitive)
-}
-
-# Improved prediction settings
-Set-PSReadLineOption -PredictionSource HistoryAndPlugin
-Set-PSReadLineOption -MaximumHistoryCount 10000
-
-# Custom key handlers
-Set-PSReadLineKeyHandler -Key UpArrow -Function HistorySearchBackward
-Set-PSReadLineKeyHandler -Key DownArrow -Function HistorySearchForward
-Set-PSReadLineKeyHandler -Key Tab -Function MenuComplete
-Set-PSReadLineKeyHandler -Chord 'Ctrl+d' -Function DeleteChar
-Set-PSReadLineKeyHandler -Chord 'Ctrl+w' -Function BackwardDeleteWord
-Set-PSReadLineKeyHandler -Chord 'Alt+d' -Function DeleteWord
-Set-PSReadLineKeyHandler -Chord 'Ctrl+LeftArrow' -Function BackwardWord
-Set-PSReadLineKeyHandler -Chord 'Ctrl+RightArrow' -Function ForwardWord
-Set-PSReadLineKeyHandler -Chord 'Ctrl+z' -Function Undo
-Set-PSReadLineKeyHandler -Chord 'Ctrl+y' -Function Redo
 
 $Host.UI.RawUI.WindowTitle = $env:WT_MODE
+
+$null = Register-EngineEvent -SourceIdentifier 'PowerShell.OnIdle' -MaxTriggerCount 1 -Action {
+# Enhanced PowerShell Experience
+# Enhanced PSReadLine Configuration
+  $PSReadLineOptions = @{
+    EditMode = 'Windows'
+      HistoryNoDuplicates = $true
+      HistorySearchCursorMovesToEnd = $true
+      Colors = @{
+        Command = '#87CEEB'  # SkyBlue (pastel)
+          Parameter = '#98FB98'  # PaleGreen (pastel)
+          Operator = '#FFB6C1'  # LightPink (pastel)
+          Variable = '#DDA0DD'  # Plum (pastel)
+          String = '#FFDAB9'  # PeachPuff (pastel)
+          Number = '#B0E0E6'  # PowderBlue (pastel)
+          Type = '#F0E68C'  # Khaki (pastel)
+          Comment = '#D3D3D3'  # LightGray (pastel)
+          Keyword = '#8367c7'  # Violet (pastel)
+          Error = '#FF6347'  # Tomato (keeping it close to red for visibility)
+      }
+    PredictionSource = 'History'
+      PredictionViewStyle = 'ListView'
+      BellStyle = 'None'
+  }
+  Set-PSReadLineOption @PSReadLineOptions
+
+# Custom functions for PSReadLine
+    Set-PSReadLineOption -AddToHistoryHandler {
+      param($line)
+        $sensitive = @('password', 'secret', 'token', 'apikey', 'connectionstring')
+        $hasSensitive = $sensitive | Where-Object { $line -match $_ }
+      return ($null -eq $hasSensitive)
+    }
+
+# Improved prediction settings
+  Set-PSReadLineOption -PredictionSource HistoryAndPlugin
+    Set-PSReadLineOption -MaximumHistoryCount 10000
+
+# Custom key handlers
+    Set-PSReadLineKeyHandler -Key UpArrow -Function HistorySearchBackward
+    Set-PSReadLineKeyHandler -Key DownArrow -Function HistorySearchForward
+    Set-PSReadLineKeyHandler -Key Tab -Function MenuComplete
+    Set-PSReadLineKeyHandler -Chord 'Ctrl+d' -Function DeleteChar
+    Set-PSReadLineKeyHandler -Chord 'Ctrl+w' -Function BackwardDeleteWord
+    Set-PSReadLineKeyHandler -Chord 'Alt+d' -Function DeleteWord
+    Set-PSReadLineKeyHandler -Chord 'Ctrl+LeftArrow' -Function BackwardWord
+    Set-PSReadLineKeyHandler -Chord 'Ctrl+RightArrow' -Function ForwardWord
+    Set-PSReadLineKeyHandler -Chord 'Ctrl+z' -Function Undo
+    Set-PSReadLineKeyHandler -Chord 'Ctrl+y' -Function Redo
+# Import Modules and External Profiles
+# Ensure Terminal-Icons module is installed before importing
+    if (-not (Get-Module -ListAvailable -Name Terminal-Icons)) {
+      Install-Module -Name Terminal-Icons -Scope CurrentUser -Force -SkipPublisherCheck
+    }
+  Import-Module -Name Terminal-Icons
+    $ChocolateyProfile = "$env:ChocolateyInstall\helpers\chocolateyProfile.psm1"
+    if (Test-Path($ChocolateyProfile)) {
+      Import-Module "$ChocolateyProfile"
+    }
+}
