@@ -3,9 +3,7 @@ $Env:YAZI_FILE_HOME = "C:\Users\Hugo\AppData\Roaming\yazi\config"
 
 $Env:KOMOREBI_CONFIG_HOME = 'C:\Users\Hugo\.config\komorebi'
 
-Remove-Item Alias:sl -Force
-Remove-Item Alias:gp -Force
-Remove-Item Alias:diff -Force
+Remove-Item Alias:diff -Force -ErrorAction SilentlyContinue
 
 function flushdns {
 	Clear-DnsClientCache
@@ -148,7 +146,7 @@ function getInstalledFonts { & Get-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\
 
 Set-Alias mic -Value micro
 
-# Remove-Item Alias:find -Force
+# Remove-Item Alias:find -Force -ErrorAction SilentlyContinue
 # Set-Alias find -Value "/usr/bin/find"
 
 # Set-Alias nvim -Value "C:\Program Files\Neovide\neovide.exe"
@@ -160,10 +158,13 @@ function d { Set-Location -Path D:\ }
 function j { Set-Location -Path J:\ }
 function k { Set-Location -Path K:\ }
 
-Remove-Item Alias:ps -Force
+Remove-Item Alias:ps -Force -ErrorAction SilentlyContinue
 
 function ps($name) { Get-Process *$name* }
 
+function pkill($name) {
+    Get-Process $name -ErrorAction SilentlyContinue | Stop-Process
+}
 function sed($file, $find, $replace) {
     (Get-Content $file).replace("$find", $replace) | Set-Content $file
 }
@@ -212,7 +213,7 @@ function ddu { ii "C:\ProgramData\chocolatey\bin\Display Driver Uninstaller.exe"
 
 function choco-outdated { & "C:\Aplications\BCURRAN3\Choco Outdated.bat"}
 
-Remove-Item Alias:ls -Force
+Remove-Item Alias:ls -ErrorAction SilentlyContinue
 function ls($params) { Get-ChildItem $params | Format-Wide -Column 4 }
 
 Set-Alias df -Value get-volume
@@ -356,6 +357,10 @@ Register-ArgumentCompleter -CommandName Change-Theme -ParameterName name -Script
         }
 }
 
+function reload-profile {
+  & $PROFILE.CurrentUserAllHosts
+}
+
 function Change-Theme {
     param (
         [Parameter(Mandatory)]
@@ -368,7 +373,7 @@ function Change-Theme {
     (Get-Content -Path $filePath) -replace $searchPattern, $replaceText | Set-Content -Path $filePath
 
     Invoke-Expression "oh-my-posh init pwsh --config='C:\Program Files (x86)\oh-my-posh\themes\$name.omp.json' | Invoke-Expression"
-    Invoke-Expression "& $profile"
+    Invoke-Expression "reload-profile"
 }
 
 $poshTheme = 'C:\Program Files (x86)\oh-my-posh\themes\amro.omp.json'
