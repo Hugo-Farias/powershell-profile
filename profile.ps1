@@ -4,6 +4,50 @@ $Env:YAZI_FILE_HOME = "C:\Users\Hugo\AppData\Roaming\yazi\config"
 $Env:KOMOREBI_CONFIG_HOME = 'C:\Users\Hugo\.config\komorebi'
 
 Remove-Item Alias:diff -Force -ErrorAction SilentlyContinue
+Remove-Item Alias:sl -Force -ErrorAction SilentlyContinue
+
+function analyze {
+    $dump = Get-ChildItem C:\Windows\Minidump\*.dmp | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+    if (-not $dump) {
+        Write-Error "No minidump files found in C:\Windows\Minidump"
+        return
+    }
+
+    & "C:\Program Files\WindowsApps\Microsoft.WinDbg_1.2506.12002.0_x64__8wekyb3d8bbwe\amd64\cdb.exe" -z $dump.FullName -c "!analyze -v; lm t n; q"
+}
+
+function getevents {
+    param(
+        [Parameter(Mandatory=$true)]
+        [datetime]$Start,
+
+        [Parameter(Mandatory=$true)]
+        [datetime]$End,
+
+        [string[]]$Logs = @("Application","System","Security","Setup","ForwardedEvents"),
+        
+        [switch]$AllLogs,   # if you want literally all logs, use -AllLogs
+        [switch]$Merge      # if you want results sorted chronologically across all logs
+    )
+
+    if ($AllLogs) {
+        $logsToQuery = (Get-WinEvent -ListLog *).LogName
+    } else {
+        $logsToQuery = $Logs
+    }
+
+    $results = foreach ($log in $logsToQuery) {
+        try {
+            Get-WinEvent -FilterHashtable @{ LogName=$log; StartTime=$Start; EndTime=$End } -ErrorAction Stop
+        } catch {}
+    }
+
+    if ($Merge) {
+        $results | Sort-Object TimeCreated
+    } else {
+        $results
+    }
+}
 
 function flushdns {
 	Clear-DnsClientCache
@@ -13,6 +57,10 @@ function flushdns {
 # Quick Access to Editing the Profile
 function Edit-Profile {
     nvim $PROFILE.CurrentUserAllHosts
+}
+
+function edit-terminal {
+  nvim C:\Users\Hugo\AppData\Local\Packages\Microsoft.WindowsTerminal_8wekyb3d8bbwe\LocalState\settings.json
 }
 
 Set-Alias -Name ep -Value Edit-Profile
@@ -123,6 +171,7 @@ function grao {
 Set-Alias gg -Value gemini
 
 Set-Alias v -Value nvim
+Set-Alias vim -Value nvim
 
 function nvimconfig { nvim "C:\Users\Hugo\AppData\Local\nvim\init.lua" }
 
@@ -136,10 +185,21 @@ function nvimundo {
   echo "Removed undo files older than $daysThreshold days"
 }
 
+function nvimswap {
+  $swapDir = "C:/Users/Hugo/AppData/Local/nvim-data/swap"
+
+}
+
 function nvimclean {
-  rm C:\Users\Hugo\AppData\Local\nvim-data\shada\main.shada.tmp.* 
-  echo "Deleted Shada files"
-  nvimundo
+  if (Get-Process -Name "nvim" -ErrorAction SilentlyContinue) {
+    Write-Host "Neovim is running."
+  } else {
+    rm C:\Users\Hugo\AppData\Local\nvim-data\shada\main.shada.tmp.* 
+    echo "Shada files deleted"
+    rm C:\Users\Hugo\AppData\Local\nvim-data\swap\*.*
+    echo "Swap files deleted"
+    nvimundo
+  }
 }
 
 function getInstalledFonts { & Get-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts" }
@@ -211,7 +271,7 @@ Set-Alias trash -Value tr
 
 function ddu { ii "C:\ProgramData\chocolatey\bin\Display Driver Uninstaller.exe"}
 
-function choco-outdated { & "C:\Aplications\BCURRAN3\Choco Outdated.bat"}
+function chococlean { & "C:\Aplications\BCURRAN3\Choco Outdated.bat"}
 
 Remove-Item Alias:ls -ErrorAction SilentlyContinue
 function ls($params) { Get-ChildItem $params | Format-Wide -Column 4 }
@@ -387,6 +447,19 @@ Invoke-Expression "oh-my-posh init pwsh --config='$poshTheme' | Invoke-Expressio
 $Host.UI.RawUI.WindowTitle = $env:WT_MODE
 
 $null = Register-EngineEvent -SourceIdentifier 'PowerShell.OnIdle' -MaxTriggerCount 1 -Action {
+# Import Modules and External Profiles
+# Ensure Terminal-Icons module is installed before importing
+  if (-not (Get-Module -ListAvailable -Name Terminal-Icons)) {
+    Install-Module -Name Terminal-Icons -Scope CurrentUser -Force -SkipPublisherCheck
+
+  }
+
+  Import-Module -Name Terminal-Icons
+  $ChocolateyProfile = "$env:ChocolateyInstall\helpers\chocolateyProfile.psm1"
+  if (Test-Path($ChocolateyProfile)) {
+    Import-Module "$ChocolateyProfile"
+  }
+
 # Enhanced PowerShell Experience
 # Enhanced PSReadLine Configuration
   $PSReadLineOptions = @{
@@ -417,6 +490,7 @@ $null = Register-EngineEvent -SourceIdentifier 'PowerShell.OnIdle' -MaxTriggerCo
         $sensitive = @('password', 'secret', 'token', 'apikey', 'connectionstring')
         $hasSensitive = $sensitive | Where-Object { $line -match $_ }
       return ($null -eq $hasSensitive)
+
     }
 
 # Improved prediction settings
@@ -434,14 +508,4 @@ $null = Register-EngineEvent -SourceIdentifier 'PowerShell.OnIdle' -MaxTriggerCo
     Set-PSReadLineKeyHandler -Chord 'Ctrl+RightArrow' -Function ForwardWord
     Set-PSReadLineKeyHandler -Chord 'Ctrl+z' -Function Undo
     Set-PSReadLineKeyHandler -Chord 'Ctrl+y' -Function Redo
-# Import Modules and External Profiles
-# Ensure Terminal-Icons module is installed before importing
-    if (-not (Get-Module -ListAvailable -Name Terminal-Icons)) {
-      Install-Module -Name Terminal-Icons -Scope CurrentUser -Force -SkipPublisherCheck
-    }
-  Import-Module -Name Terminal-Icons
-    $ChocolateyProfile = "$env:ChocolateyInstall\helpers\chocolateyProfile.psm1"
-    if (Test-Path($ChocolateyProfile)) {
-      Import-Module "$ChocolateyProfile"
-    }
 }
