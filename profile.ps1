@@ -185,11 +185,6 @@ function nvimundo {
   echo "Removed undo files older than $daysThreshold days"
 }
 
-function nvimswap {
-  $swapDir = "C:/Users/Hugo/AppData/Local/nvim-data/swap"
-
-}
-
 function nvimclean {
   if (Get-Process -Name "nvim" -ErrorAction SilentlyContinue) {
     Write-Host "Neovim is running."
@@ -200,6 +195,10 @@ function nvimclean {
     echo "Swap files deleted"
     nvimundo
   }
+}
+
+function restartKanata {
+  & "D:\Users\Hugo\Documents\Scripts\Restart Kanata.bat"
 }
 
 function getInstalledFonts { & Get-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts" }
@@ -363,7 +362,6 @@ function rep {
         $_ | findstr /I $Pattern
     }
 }
-
 
 function Sleep-Computer {
 	# load assembly System.Windows.Forms which will be used
