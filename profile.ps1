@@ -16,6 +16,27 @@ function analyze {
     & "C:\Program Files\WindowsApps\Microsoft.WinDbg_1.2506.12002.0_x64__8wekyb3d8bbwe\amd64\cdb.exe" -z $dump.FullName -c "!analyze -v; lm t n; q"
 }
 
+function ddsConvert {
+    param (
+        [Parameter(Mandatory)]
+        [int]$Resolution,
+
+        [string]$RootPath = (Get-Location).Path
+    )
+
+    Get-ChildItem -Path $RootPath -Recurse -Directory | ForEach-Object {
+        $ddsFiles = Get-ChildItem -Path $_.FullName -Filter *.dds -File -ErrorAction SilentlyContinue
+        if ($ddsFiles) {
+            texconv `
+                -w $Resolution `
+                -h $Resolution `
+                -y `
+                "$($_.FullName)\*.dds" `
+                -o "$($_.FullName)"
+        }
+    }
+}
+
 function getevents {
     param(
         [Parameter(Mandatory=$true)]
@@ -138,20 +159,11 @@ function musi { Set-Location "D:\Users\Hugo\Music" }
 
 function vids { Set-Location "J:\Videos" }
 
-function wtr { curl https://wttr.in/planaltina%20goias }
+function wtr { curl https://wttr.in/ }
 
 function wd { $pwd.Path }
 
 function chromium($params) { & "C:\Program Files\Chromium\Application\chrome.exe" $params }
-
-function chrome-reload {
-  $tab = (Invoke-RestMethod http://localhost:9222/json)[0]
-  $ws = [System.Net.WebSockets.ClientWebSocket]::new()
-  $ws.ConnectAsync([Uri]$tab.webSocketDebuggerUrl, [Threading.CancellationToken]::None).Wait()
-  $msg = [Text.Encoding]::UTF8.GetBytes('{"id":1,"method":"Page.reload"}')
-  $ws.SendAsync([ArraySegment[byte]]$msg, [Net.WebSockets.WebSocketMessageType]::Text, $true, [Threading.CancellationToken]::None).Wait()
-  $ws.Dispose()
-}
 
 # git remote add origin
 function grao {
@@ -292,7 +304,8 @@ Register-ArgumentCompleter -CommandName changedns -ParameterName params -ScriptB
     $dnsOptions = @(
         '"1.1.1.1, 1.0.0.1"',
         '"8.8.8.8, 8.0.0.8"',
-        '"208.67.222.222, 208.67.220.220"'
+        '"208.67.222.222, 208.67.220.220"',
+        '"189.38.95.95, 189.38.95.96"'
     )
 
     # Filter suggestions based on the word the user typed so far
@@ -301,10 +314,6 @@ Register-ArgumentCompleter -CommandName changedns -ParameterName params -ScriptB
     }
 }
 
-Set-Alias -Name z -Value __zoxide_z -Option AllScope -Scope Global -Force
-Set-Alias -Name zi -Value __zoxide_zi -Option AllScope -Scope Global -Force
-Invoke-Expression (& { (zoxide init powershell | Out-String)})
-function zz { z - }
 
 Set-Alias -Name showdns -Value Get-DnsClient 
 
@@ -443,10 +452,6 @@ Invoke-Expression "oh-my-posh init pwsh --config='$poshTheme' | Invoke-Expressio
 
 
 $Host.UI.RawUI.WindowTitle = $env:WT_MODE
-
-$null = Register-EngineEvent -SourceIdentifier 'PowerShell.OnIdle' -MaxTriggerCount 1 -Action {
-# Import Modules and External Profiles
-# Ensure Terminal-Icons module is installed before importing
   if (-not (Get-Module -ListAvailable -Name Terminal-Icons)) {
     Install-Module -Name Terminal-Icons -Scope CurrentUser -Force -SkipPublisherCheck
 
@@ -457,6 +462,10 @@ $null = Register-EngineEvent -SourceIdentifier 'PowerShell.OnIdle' -MaxTriggerCo
   if (Test-Path($ChocolateyProfile)) {
     Import-Module "$ChocolateyProfile"
   }
+
+$null = Register-EngineEvent -SourceIdentifier 'PowerShell.OnIdle' -MaxTriggerCount 1 -Action {
+# Import Modules and External Profiles
+# Ensure Terminal-Icons module is installed before importing
 
 # Enhanced PowerShell Experience
 # Enhanced PSReadLine Configuration
@@ -507,3 +516,8 @@ $null = Register-EngineEvent -SourceIdentifier 'PowerShell.OnIdle' -MaxTriggerCo
     Set-PSReadLineKeyHandler -Chord 'Ctrl+z' -Function Undo
     Set-PSReadLineKeyHandler -Chord 'Ctrl+y' -Function Redo
 }
+
+Set-Alias -Name z -Value __zoxide_z -Option AllScope -Scope Global -Force
+Set-Alias -Name zi -Value __zoxide_zi -Option AllScope -Scope Global -Force
+Invoke-Expression (& { (zoxide init powershell | Out-String)})
+function zz { z - }
