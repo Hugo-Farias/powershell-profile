@@ -159,15 +159,23 @@ function musi { Set-Location "D:\Users\Hugo\Music" }
 
 function vids { Set-Location "J:\Videos" }
 
-function wtr { curl https://wttr.in/ }
+function wtr { curl https://wttr.in/sobradinho%20distrito%20federal }
 
 function wd { $pwd.Path }
 
-function chromium($params) { & "C:\Program Files\Chromium\Application\chrome.exe" $params }
+function chromium { & "C:\Program Files\Chromium\Application\chrome.exe" $args }
+
+function ani { wsl ani-cli $args }
+
+function tv { luffy $args -b -a play -p braflix }
+
+function yt { luffy $args -b -a play -p youtube }
 
 # git remote add origin
 function grao {
     param (
+        [Parameter(Mandatory=$true)]
+        [string]$branchName,
         [Parameter(Mandatory=$true)]
         [string]$repoUrl
     )
@@ -176,8 +184,8 @@ function grao {
     $sshUrl = $repoUrl -replace '^https://github.com/', 'git@github.com:'
 
     git remote add origin $sshUrl
-    git branch -M main
-    git push -u origin main
+    git branch -M $branchName
+    git push -u origin $branchName
 }
 
 Set-Alias gg -Value gemini
@@ -186,6 +194,17 @@ Set-Alias v -Value nvim
 Set-Alias vim -Value nvim
 
 function nvimconfig { nvim "C:\Users\Hugo\AppData\Local\nvim\init.lua" }
+
+function ex {
+    $selected = es $args | fzf
+    if (-not $selected) { return }
+
+    if (Test-Path $selected -PathType Container) {
+        __zoxide_z "$selected"
+    } else {
+        explorer "$selected"
+    }
+}
 
 function nvimundo { 
   $undoDir = "C:/Users/Hugo/AppData/Local/nvim-data/undo"
@@ -246,7 +265,6 @@ function which($name) {
 
 # Directory Management
 function mkcd { param($dir) mkdir $dir -Force; Set-Location $dir }
-
 
 function tr($name) { Remove-ItemSafely($name) }
 
