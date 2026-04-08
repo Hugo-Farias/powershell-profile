@@ -105,12 +105,12 @@ function prompt {
 
 # Open WinUtil full-release
 function winutil {
-	irm https://christitus.com/win | iex
+	Invoke-RestMethod https://christitus.com/win | Invoke-Expression
 }
 
 # Open WinUtil pre-release
 function winutildev {
-	irm https://christitus.com/windev | iex
+	Invoke-RestMethod https://christitus.com/windev | Invoke-Expression
 }
 
 # System Utilities
@@ -131,8 +131,8 @@ function unzip ($file) {
 # Set UNIX-like aliases for the admin command, so sudo <command> will run the command with elevated rights.
 Set-Alias -Name su -Value admin
 
-$adminSuffix = if ($isAdmin) { " [ADMIN]" } else { "" }
-$Host.UI.RawUI.WindowTitle = "PowerShell {0}$adminSuffix" -f $PSVersionTable.PSVersion.ToString()
+# $adminSuffix = if ($isAdmin) { " [ADMIN]" } else { "" }
+# $Host.UI.RawUI.WindowTitle = "PowerShell {0}$adminSuffix" -f $PSVersionTable.PSVersion.ToString()
 
 
 function sshstart {
@@ -163,8 +163,6 @@ function wtr { curl https://wttr.in/sobradinho%20distrito%20federal }
 
 function wd { $pwd.Path }
 
-function chromium { & "C:\Program Files\Chromium\Application\chrome.exe" $args }
-
 function ani { wsl ani-cli $args }
 
 function tv { luffy $args -b -a play -p braflix }
@@ -190,10 +188,20 @@ function grao {
 
 Set-Alias gg -Value gemini
 
-Set-Alias v -Value nvim
-Set-Alias vim -Value nvim
 
-function nvimconfig { nvim "C:\Users\Hugo\AppData\Local\nvim\init.lua" }
+function eclip { es $args | fzf | clip }
+
+function ez {
+  $path = es $args | fzf
+
+  if (-not $path) { return }
+
+  if (Test-Path $path -PathType Leaf) {
+    $path = Split-Path $path -Parent
+  }
+
+  Set-Location $path
+}
 
 function ex {
     $selected = es $args | fzf
@@ -206,6 +214,11 @@ function ex {
     }
 }
 
+Set-Alias v -Value nvim
+Set-Alias vim -Value nvim
+
+function nvimconfig { nvim "C:\Users\Hugo\AppData\Local\nvim\init.lua" }
+
 function nvimundo { 
   $undoDir = "C:/Users/Hugo/AppData/Local/nvim-data/undo"
   $daysThreshold = 30 * 12
@@ -213,17 +226,17 @@ function nvimundo {
   Get-ChildItem -Path $undoDir -File | Where-Object {
     $_.LastWriteTime -lt (Get-Date).AddDays(-$daysThreshold)
   } | Remove-Item -Force
-  echo "Removed undo files older than $daysThreshold days"
+  Write-Output "Removed undo files older than $daysThreshold days"
 }
 
 function nvimclean {
   if (Get-Process -Name "nvim" -ErrorAction SilentlyContinue) {
     Write-Host "Neovim is running."
   } else {
-    rm C:\Users\Hugo\AppData\Local\nvim-data\shada\main.shada.tmp.* 
-    echo "Shada files deleted"
-    rm C:\Users\Hugo\AppData\Local\nvim-data\swap\*.*
-    echo "Swap files deleted"
+    Remove-Item C:\Users\Hugo\AppData\Local\nvim-data\shada\main.shada.tmp.* 
+    Write-Output "Shada files deleted"
+    Remove-Item C:\Users\Hugo\AppData\Local\nvim-data\swap\*.*
+    Write-Output "Swap files deleted"
     nvimundo
   }
 }
@@ -234,14 +247,10 @@ function restartKanata {
 
 function getInstalledFonts { & Get-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts" }
 
-Set-Alias mic -Value micro
-
 # Remove-Item Alias:find -Force -ErrorAction SilentlyContinue
 # Set-Alias find -Value "/usr/bin/find"
 
 # Set-Alias nvim -Value "C:\Program Files\Neovide\neovide.exe"
-
-Set-Alias ws -Value webstorm
 
 function c { Set-Location -Path C:\ }
 function d { Set-Location -Path D:\ }
@@ -298,7 +307,7 @@ Set-Alias trash -Value tr
 #     }
 # }
 
-function ddu { ii "C:\ProgramData\chocolatey\bin\Display Driver Uninstaller.exe"}
+function ddu { Invoke-Item "C:\ProgramData\chocolatey\bin\Display Driver Uninstaller.exe"}
 
 function chococlean { & "C:\Aplications\BCURRAN3\Choco Outdated.bat"}
 
@@ -346,7 +355,7 @@ Set-Alias -Name sysinfo -Value Get-ComputerInfo
 Set-Alias -Name htop -Value ntop
 
 # # Move up a directory with u or multiple with u{number}
-function u { cd .. }
+function u { Set-Location .. }
 # for($i = 1; $i -le 5; $i++){
   # $u =  "".PadLeft($i,"u")
   # $unum =  "u$i"
@@ -390,7 +399,7 @@ function rep {
     }
 }
 
-function Sleep-Computer {
+function sleepComputer {
 	# load assembly System.Windows.Forms which will be used
 	Add-Type -AssemblyName System.Windows.Forms
 
@@ -407,7 +416,7 @@ function Sleep-Computer {
 	[System.Windows.Forms.Application]::SetSuspendState($PowerState, $Force, $DisableWake);
 }
 
-function Bios-Computer {shutdown /t 0 /r /fw}
+function biosComputer {shutdown /t 0 /r /fw}
 
 function Clear-Cache {
     # add clear cache logic here
@@ -442,11 +451,11 @@ Register-ArgumentCompleter -CommandName Change-Theme -ParameterName name -Script
         }
 }
 
-function reload-profile {
+function reloadProfile {
   & $PROFILE.CurrentUserAllHosts
 }
 
-function Change-Theme {
+function changeTheme {
     param (
         [Parameter(Mandatory)]
         [string]$name
@@ -465,17 +474,13 @@ $poshTheme = 'C:\Program Files (x86)\oh-my-posh\themes\amro.omp.json'
 
 Invoke-Expression "oh-my-posh init pwsh --config='$poshTheme' | Invoke-Expression"
 
-# $existingTheme = Select-String -Raw -Path $PROFILE.CurrentUserAllHosts -Pattern "oh-$my-posh init pwsh --config"
-# Invoke-Expression $existingTheme
-
-
 $Host.UI.RawUI.WindowTitle = $env:WT_MODE
-  if (-not (Get-Module -ListAvailable -Name Terminal-Icons)) {
-    Install-Module -Name Terminal-Icons -Scope CurrentUser -Force -SkipPublisherCheck
 
-  }
+  # if (-not (Get-Module -ListAvailable -Name Terminal-Icons)) {
+  #   Install-Module -Name Terminal-Icons -Scope CurrentUser -Force -SkipPublisherCheck
+  #
+  # }
 
-  Import-Module -Name Terminal-Icons
   $ChocolateyProfile = "$env:ChocolateyInstall\helpers\chocolateyProfile.psm1"
   if (Test-Path($ChocolateyProfile)) {
     Import-Module "$ChocolateyProfile"
@@ -484,6 +489,8 @@ $Host.UI.RawUI.WindowTitle = $env:WT_MODE
 $null = Register-EngineEvent -SourceIdentifier 'PowerShell.OnIdle' -MaxTriggerCount 1 -Action {
 # Import Modules and External Profiles
 # Ensure Terminal-Icons module is installed before importing
+
+  Import-Module -Name Terminal-Icons
 
 # Enhanced PowerShell Experience
 # Enhanced PSReadLine Configuration
