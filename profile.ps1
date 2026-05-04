@@ -16,27 +16,6 @@ function analyze {
     & "C:\Program Files\WindowsApps\Microsoft.WinDbg_1.2506.12002.0_x64__8wekyb3d8bbwe\amd64\cdb.exe" -z $dump.FullName -c "!analyze -v; lm t n; q"
 }
 
-function ddsConvert {
-    param (
-        [Parameter(Mandatory)]
-        [int]$Resolution,
-
-        [string]$RootPath = (Get-Location).Path
-    )
-
-    Get-ChildItem -Path $RootPath -Recurse -Directory | ForEach-Object {
-        $ddsFiles = Get-ChildItem -Path $_.FullName -Filter *.dds -File -ErrorAction SilentlyContinue
-        if ($ddsFiles) {
-            texconv `
-                -w $Resolution `
-                -h $Resolution `
-                -y `
-                "$($_.FullName)\*.dds" `
-                -o "$($_.FullName)"
-        }
-    }
-}
-
 function getevents {
     param(
         [Parameter(Mandatory=$true)]
@@ -70,6 +49,27 @@ function getevents {
     }
 }
 
+function ddsConvert {
+    param (
+        [Parameter(Mandatory)]
+        [int]$Resolution,
+
+        [string]$RootPath = (Get-Location).Path
+    )
+
+    Get-ChildItem -Path $RootPath -Recurse -Directory | ForEach-Object {
+        $ddsFiles = Get-ChildItem -Path $_.FullName -Filter *.dds -File -ErrorAction SilentlyContinue
+        if ($ddsFiles) {
+            texconv `
+                -w $Resolution `
+                -h $Resolution `
+                -y `
+                "$($_.FullName)\*.dds" `
+                -o "$($_.FullName)"
+        }
+    }
+}
+
 function flushdns {
 	Clear-DnsClientCache
 	Write-Host "DNS has been flushed"
@@ -80,13 +80,15 @@ function Edit-Profile {
     nvim $PROFILE.CurrentUserAllHosts
 }
 
+Set-Alias -Name ep -Value Edit-Profile
+
 function edit-terminal {
   nvim C:\Users\Hugo\AppData\Local\Packages\Microsoft.WindowsTerminal_8wekyb3d8bbwe\LocalState\settings.json
 }
 
-Set-Alias -Name ep -Value Edit-Profile
+Set-Alias -Name et -Value edit-terminal
 
-function touch($file) { "" | Out-File $file -Encoding ASCII }
+function touch { "" | Out-File $args -Encoding ASCII }
 
 function ff($name) {
     Get-ChildItem -recurse -filter "*${name}*" -ErrorAction SilentlyContinue | ForEach-Object {
@@ -123,13 +125,22 @@ function admin {
     }
 }
 
+function zip {
+    param(
+        [Parameter(Mandatory, ValueFromRemainingArguments)]
+        [string[]]$Path,
+
+        [string]$Destination = "archive.zip"
+    )
+
+    Compress-Archive -Path $Path -DestinationPath $Destination -Force
+}
+
 function unzip ($file) {
     Write-Output("Extracting", $file, "to", $pwd)
     $fullFile = Get-ChildItem -Path $pwd -Filter $file | ForEach-Object { $_.FullName }
     Expand-Archive -Path $fullFile -DestinationPath $pwd
 }
-# Set UNIX-like aliases for the admin command, so sudo <command> will run the command with elevated rights.
-Set-Alias -Name su -Value admin
 
 # $adminSuffix = if ($isAdmin) { " [ADMIN]" } else { "" }
 # $Host.UI.RawUI.WindowTitle = "PowerShell {0}$adminSuffix" -f $PSVersionTable.PSVersion.ToString()
@@ -165,9 +176,11 @@ function wd { $pwd.Path }
 
 function ani { wsl ani-cli $args }
 
-function tv { luffy $args -b -a play -p braflix }
+function tv { luffy $args -b -a play}
 
 function yt { luffy $args -b -a play -p youtube }
+
+Set-Alias gg -Value gemini
 
 # git remote add origin
 function grao {
@@ -185,9 +198,6 @@ function grao {
     git branch -M $branchName
     git push -u origin $branchName
 }
-
-Set-Alias gg -Value gemini
-
 
 function eclip { es $args | fzf | clip }
 
@@ -245,7 +255,7 @@ function restartKanata {
   & "D:\Users\Hugo\Documents\Scripts\Restart Kanata.bat"
 }
 
-function getInstalledFonts { & Get-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts" }
+function getInstalledFonts { Get-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts" }
 
 # Remove-Item Alias:find -Force -ErrorAction SilentlyContinue
 # Set-Alias find -Value "/usr/bin/find"
@@ -259,53 +269,25 @@ function k { Set-Location -Path K:\ }
 
 Remove-Item Alias:ps -Force -ErrorAction SilentlyContinue
 
-function ps($name) { Get-Process *$name* }
+function ps { Get-Process *$args* }
 
-function pkill($name) {
-    Get-Process $name -ErrorAction SilentlyContinue | Stop-Process
+function pkill {
+    Get-Process $args -ErrorAction SilentlyContinue | Stop-Process
 }
 function sed($file, $find, $replace) {
     (Get-Content $file).replace("$find", $replace) | Set-Content $file
 }
 
-function which($name) {
-    Get-Command $name | Select-Object -ExpandProperty Definition
+function which {
+    Get-Command $args | Select-Object -ExpandProperty Definition
 }
 
 # Directory Management
 function mkcd { param($dir) mkdir $dir -Force; Set-Location $dir }
 
-function tr($name) { Remove-ItemSafely($name) }
+function tr { Remove-ItemSafely($args) }
 
 Set-Alias trash -Value tr
-
-# function trash($path) {
-#     $fullPath = (Resolve-Path -Path $path).Path
-#
-#     if (Test-Path $fullPath) {
-#         $item = Get-Item $fullPath
-#
-#         if ($item.PSIsContainer) {
-#           # Handle directory
-#             $parentPath = $item.Parent.FullName
-#         } else {
-#             # Handle file
-#             $parentPath = $item.DirectoryName
-#         }
-#
-#         $shell = New-Object -ComObject 'Shell.Application'
-#         $shellItem = $shell.NameSpace($parentPath).ParseName($item.Name)
-#
-#         if ($item) {
-#             $shellItem.InvokeVerb('delete')
-#             Write-Host "Item '$fullPath' has been moved to the Recycle Bin."
-#         } else {
-#             Write-Host "Error: Could not find the item '$fullPath' to trash."
-#         }
-#     } else {
-#         Write-Host "Error: Item '$fullPath' does not exist."
-#     }
-# }
 
 function ddu { Invoke-Item "C:\ProgramData\chocolatey\bin\Display Driver Uninstaller.exe"}
 
@@ -314,7 +296,6 @@ function chococlean { & "C:\Aplications\BCURRAN3\Choco Outdated.bat"}
 Remove-Item Alias:ls -ErrorAction SilentlyContinue
 function ls($params) { Get-ChildItem $params | Format-Wide -Column 4 }
 
-Set-Alias df -Value get-volume
 
 function changedns {
     param(
@@ -341,6 +322,8 @@ Register-ArgumentCompleter -CommandName changedns -ParameterName params -ScriptB
     }
 }
 
+
+Set-Alias df -Value get-volume
 
 Set-Alias -Name showdns -Value Get-DnsClient 
 
@@ -478,7 +461,6 @@ $Host.UI.RawUI.WindowTitle = $env:WT_MODE
 
   # if (-not (Get-Module -ListAvailable -Name Terminal-Icons)) {
   #   Install-Module -Name Terminal-Icons -Scope CurrentUser -Force -SkipPublisherCheck
-  #
   # }
 
   $ChocolateyProfile = "$env:ChocolateyInstall\helpers\chocolateyProfile.psm1"
@@ -531,7 +513,9 @@ $null = Register-EngineEvent -SourceIdentifier 'PowerShell.OnIdle' -MaxTriggerCo
 
 # Custom key handlers
     Set-PSReadLineKeyHandler -Key UpArrow -Function HistorySearchBackward
+    Set-PSReadLineKeyHandler -Key "Ctrl+p" -Function HistorySearchBackward
     Set-PSReadLineKeyHandler -Key DownArrow -Function HistorySearchForward
+    Set-PSReadLineKeyHandler -Key "Ctrl+n" -Function HistorySearchForward
     Set-PSReadLineKeyHandler -Key Tab -Function MenuComplete
     Set-PSReadLineKeyHandler -Chord 'Ctrl+d' -Function DeleteChar
     Set-PSReadLineKeyHandler -Chord 'Ctrl+w' -Function BackwardDeleteWord
