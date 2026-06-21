@@ -145,6 +145,59 @@ function unzip ($file) {
 # $adminSuffix = if ($isAdmin) { " [ADMIN]" } else { "" }
 # $Host.UI.RawUI.WindowTitle = "PowerShell {0}$adminSuffix" -f $PSVersionTable.PSVersion.ToString()
 
+function pathAdd {
+    param(
+        [Parameter(Mandatory)]
+        [string]$PathToAdd
+    )
+
+    $userPath = [Environment]::GetEnvironmentVariable("Path", "User")
+    $paths = $userPath -split ';'
+
+    if ($paths -contains $PathToAdd) {
+        Write-Host "Already exists in PATH: $PathToAdd"
+        return
+    }
+
+    [Environment]::SetEnvironmentVariable(
+        "Path",
+        ($paths + $PathToAdd) -join ';',
+        "User"
+    )
+
+    $env:Path += ";$PathToAdd"
+
+    Write-Host "Added to PATH: $PathToAdd"
+}
+
+function pathClean {
+    $userPath = [Environment]::GetEnvironmentVariable("Path", "User")
+
+    $paths = $userPath -split ';'
+
+    $cleanPath = (
+        $paths |
+        Where-Object { $_ -and (Test-Path $_) } |
+        Select-Object -Unique
+    )
+
+    $removed = $paths | Where-Object { $_ -and $_ -notin $cleanPath }
+
+    if ($removed) {
+        Write-Host "Removing:"
+        $removed | ForEach-Object { Write-Host "  $_" }
+    }
+    else {
+        Write-Host "No invalid paths found"
+    }
+
+    $cleanPath = $cleanPath -join ';'
+
+    [Environment]::SetEnvironmentVariable("Path", $cleanPath, "User")
+    $env:Path = $cleanPath
+
+    Write-Host "PATH cleaned"
+}
 
 function sshstart {
     $keyPath = "$env:USERPROFILE\.ssh\id_ed25519"
@@ -227,7 +280,7 @@ function ex {
 Set-Alias v -Value nvim
 Set-Alias vim -Value nvim
 
-function nvimconfig { nvim "C:\Users\Hugo\AppData\Local\nvim\init.lua" }
+function nvimconfig { Set-Location "C:\Users\Hugo\AppData\Local\nvim\" }
 
 function nvimundo { 
   $undoDir = "C:/Users/Hugo/AppData/Local/nvim-data/undo"
@@ -274,6 +327,8 @@ function ps { Get-Process *$args* }
 function pkill {
     Get-Process $args -ErrorAction SilentlyContinue | Stop-Process
 }
+Set-Alias pk -Value pkill
+
 function sed($file, $find, $replace) {
     (Get-Content $file).replace("$find", $replace) | Set-Content $file
 }
@@ -297,7 +352,7 @@ Remove-Item Alias:ls -ErrorAction SilentlyContinue
 function ls($params) { Get-ChildItem $params | Format-Wide -Column 4 }
 
 
-function changedns {
+function dnsChange {
     param(
         [Parameter(Mandatory)]
         [string]$params
@@ -306,7 +361,7 @@ function changedns {
 }
 
 # Register Argument Completer outside the function
-Register-ArgumentCompleter -CommandName changedns -ParameterName params -ScriptBlock {
+Register-ArgumentCompleter -CommandName dnsChange -ParameterName params -ScriptBlock {
     param($commandName, $parameterName, $wordToComplete, $commandAst, $fakeBoundParameters)
     
     $dnsOptions = @(
@@ -424,7 +479,7 @@ function Clear-Cache {
     Write-Host "Cache clearing completed." -ForegroundColor Green
 }
 
-Register-ArgumentCompleter -CommandName Change-Theme -ParameterName name -ScriptBlock {
+Register-ArgumentCompleter -CommandName changeTheme -ParameterName name -ScriptBlock {
     param($commandName, $parameterName, $wordToComplete, $commandAst, $fakeBoundParameters)
     Get-ChildItem -Path 'C:\Program Files (x86)\oh-my-posh\themes' -Filter *.omp.json |
         ForEach-Object { $_.BaseName -replace '\.omp$', '' } |
@@ -450,7 +505,7 @@ function changeTheme {
     (Get-Content -Path $filePath) -replace $searchPattern, $replaceText | Set-Content -Path $filePath
 
     Invoke-Expression "oh-my-posh init pwsh --config='C:\Program Files (x86)\oh-my-posh\themes\$name.omp.json' | Invoke-Expression"
-    Invoke-Expression "reload-profile"
+    Invoke-Expression "reloadProfile"
 }
 
 $poshTheme = 'C:\Program Files (x86)\oh-my-posh\themes\amro.omp.json'
