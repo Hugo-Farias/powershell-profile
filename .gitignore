@@ -55,3 +55,4 @@ luac.out
 *.x86_64
 *.hex
 
+/Modules/PSScriptAnalyzer/1.25.0

@@ -1,78 +1,58 @@
 $Env:YAZI_FILE_ONE = "C:\Program Files\Git\usr\bin\file.exe"
 $Env:YAZI_FILE_HOME = "C:\Users\Hugo\AppData\Roaming\yazi\config"
-
 $Env:KOMOREBI_CONFIG_HOME = 'C:\Users\Hugo\.config\komorebi'
 
 Remove-Item Alias:diff -Force -ErrorAction SilentlyContinue
 Remove-Item Alias:sl -Force -ErrorAction SilentlyContinue
 
-function analyze {
-    $dump = Get-ChildItem C:\Windows\Minidump\*.dmp | Sort-Object LastWriteTime -Descending | Select-Object -First 1
-    if (-not $dump) {
-        Write-Error "No minidump files found in C:\Windows\Minidump"
-        return
-    }
+function c { Set-Location -Path C:\ }
+function d { Set-Location -Path D:\ }
+function j { Set-Location -Path J:\ }
+function k { Set-Location -Path K:\ }
 
-    & "C:\Program Files\WindowsApps\Microsoft.WinDbg_1.2506.12002.0_x64__8wekyb3d8bbwe\amd64\cdb.exe" -z $dump.FullName -c "!analyze -v; lm t n; q"
-}
+function docu { Set-Location "D:\Users\Hugo\Documents" }
 
-function getevents {
-    param(
-        [Parameter(Mandatory=$true)]
-        [datetime]$Start,
+function desk { Set-Location "D:\Users\Hugo\Desktop" }
 
-        [Parameter(Mandatory=$true)]
-        [datetime]$End,
+function pics { Set-Location "D:\Users\Hugo\Pictures" }
 
-        [string[]]$Logs = @("Application","System","Security","Setup","ForwardedEvents"),
-        
-        [switch]$AllLogs,   # if you want literally all logs, use -AllLogs
-        [switch]$Merge      # if you want results sorted chronologically across all logs
-    )
+function musi { Set-Location "D:\Users\Hugo\Music" }
 
-    if ($AllLogs) {
-        $logsToQuery = (Get-WinEvent -ListLog *).LogName
-    } else {
-        $logsToQuery = $Logs
-    }
+function vids { Set-Location "J:\Videos" }
 
-    $results = foreach ($log in $logsToQuery) {
-        try {
-            Get-WinEvent -FilterHashtable @{ LogName=$log; StartTime=$Start; EndTime=$End } -ErrorAction Stop
-        } catch {}
-    }
+function bin { Set-Location "C:\tools\bin" }
 
-    if ($Merge) {
-        $results | Sort-Object TimeCreated
-    } else {
-        $results
-    }
-}
+function wtr { curl https://wttr.in/sobradinho%20distrito%20federal }
 
-function ddsConvert {
-    param (
-        [Parameter(Mandatory)]
-        [int]$Resolution,
+function wd { $pwd.Path }
 
-        [string]$RootPath = (Get-Location).Path
-    )
+function ani { wsl ani-cli $args }
 
-    Get-ChildItem -Path $RootPath -Recurse -Directory | ForEach-Object {
-        $ddsFiles = Get-ChildItem -Path $_.FullName -Filter *.dds -File -ErrorAction SilentlyContinue
-        if ($ddsFiles) {
-            texconv `
-                -w $Resolution `
-                -h $Resolution `
-                -y `
-                "$($_.FullName)\*.dds" `
-                -o "$($_.FullName)"
-        }
-    }
-}
+function tv { luffy $args -b -a play }
 
-function flushdns {
-	Clear-DnsClientCache
-	Write-Host "DNS has been flushed"
+function yt { luffy $args -b -a play -p youtube }
+
+function la { Get-ChildItem -Path . -Force | Format-Table -AutoSize }
+
+Set-Alias chmod -Value icacls.exe
+
+Set-Alias gg -Value gemini
+
+Set-Alias df -Value get-volume
+
+Set-Alias -Name showdns -Value Get-DnsClient 
+
+Set-Alias -Name list -Value Get-ChildItem
+
+Set-Alias -Name ll -Value Get-ChildItem
+
+Set-Alias -Name sysinfo -Value Get-ComputerInfo
+
+Set-Alias -Name htop -Value ntop
+
+function dnsflush {
+    Clear-DnsClientCache
+    Write-Host "DNS has been flushed"
 }
 
 # Quick Access to Editing the Profile
@@ -83,15 +63,15 @@ function Edit-Profile {
 Set-Alias -Name ep -Value Edit-Profile
 
 function edit-terminal {
-  nvim C:\Users\Hugo\AppData\Local\Packages\Microsoft.WindowsTerminal_8wekyb3d8bbwe\LocalState\settings.json
+    nvim C:\Users\Hugo\AppData\Local\Packages\Microsoft.WindowsTerminal_8wekyb3d8bbwe\LocalState\settings.json
 }
 
 Set-Alias -Name et -Value edit-terminal
 
-function touch { "" | Out-File $args -Encoding ASCII }
+function touch { New-Item -ItemType File -Path $args[0] | Out-Null }
 
 function ff($name) {
-    Get-ChildItem -recurse -filter "*${name}*" -ErrorAction SilentlyContinue | ForEach-Object {
+    Get-ChildItem -Recurse -Filter "*${name}*" -ErrorAction SilentlyContinue | ForEach-Object {
         Write-Output "$($_.FullName)"
     }
 }
@@ -107,12 +87,12 @@ function prompt {
 
 # Open WinUtil full-release
 function winutil {
-	Invoke-RestMethod https://christitus.com/win | Invoke-Expression
+    Invoke-RestMethod https://christitus.com/win | Invoke-Expression
 }
 
 # Open WinUtil pre-release
 function winutildev {
-	Invoke-RestMethod https://christitus.com/windev | Invoke-Expression
+    Invoke-RestMethod https://christitus.com/windev | Invoke-Expression
 }
 
 # System Utilities
@@ -120,20 +100,10 @@ function admin {
     if ($args.Count -gt 0) {
         $argList = $args -join ' '
         Start-Process wt -Verb runAs -ArgumentList "pwsh.exe -NoExit -Command $argList"
-    } else {
+    }
+    else {
         Start-Process wt -Verb runAs
     }
-}
-
-function zip {
-    param(
-        [Parameter(Mandatory, ValueFromRemainingArguments)]
-        [string[]]$Path,
-
-        [string]$Destination = "archive.zip"
-    )
-
-    Compress-Archive -Path $Path -DestinationPath $Destination -Force
 }
 
 function unzip ($file) {
@@ -167,7 +137,7 @@ function pathAdd {
 
     $env:Path += ";$PathToAdd"
 
-    Write-Host "Added to PATH: $PathToAdd"
+    Write-Host "Added to User PATH: $PathToAdd"
 }
 
 function pathClean {
@@ -177,8 +147,8 @@ function pathClean {
 
     $cleanPath = (
         $paths |
-        Where-Object { $_ -and (Test-Path $_) } |
-        Select-Object -Unique
+            Where-Object { $_ -and (Test-Path $_) } |
+            Select-Object -Unique
     )
 
     $removed = $paths | Where-Object { $_ -and $_ -notin $cleanPath }
@@ -213,34 +183,13 @@ function sshstart {
     }
 }
 
-function docu { Set-Location "D:\Users\Hugo\Documents" }
-
-function desk { Set-Location "D:\Users\Hugo\Desktop" }
-
-function pics { Set-Location "D:\Users\Hugo\Pictures" }
-
-function musi { Set-Location "D:\Users\Hugo\Music" }
-
-function vids { Set-Location "J:\Videos" }
-
-function wtr { curl https://wttr.in/sobradinho%20distrito%20federal }
-
-function wd { $pwd.Path }
-
-function ani { wsl ani-cli $args }
-
-function tv { luffy $args -b -a play}
-
-function yt { luffy $args -b -a play -p youtube }
-
-Set-Alias gg -Value gemini
 
 # git remote add origin
 function grao {
     param (
-        [Parameter(Mandatory=$true)]
+        [Parameter(Mandatory = $true)]
         [string]$branchName,
-        [Parameter(Mandatory=$true)]
+        [Parameter(Mandatory = $true)]
         [string]$repoUrl
     )
 
@@ -255,15 +204,21 @@ function grao {
 function eclip { es $args | fzf | clip }
 
 function ez {
-  $path = es $args | fzf
+    $path = es $args | fzf
 
-  if (-not $path) { return }
+    if (-not $path) { return }
 
-  if (Test-Path $path -PathType Leaf) {
-    $path = Split-Path $path -Parent
-  }
+    if (Test-Path $path -PathType Leaf) {
+        $path = Split-Path $path -Parent
+    }
 
-  Set-Location $path
+    Set-Location $path
+}
+
+function ev {
+    $selected = es $args | fzf
+    if (-not $selected) { return }
+    nvim "$selected"
 }
 
 function ex {
@@ -272,9 +227,7 @@ function ex {
 
     if (Test-Path $selected -PathType Container) {
         __zoxide_z "$selected"
-    } else {
-        explorer "$selected"
-    }
+    } 
 }
 
 Set-Alias v -Value nvim
@@ -283,29 +236,30 @@ Set-Alias vim -Value nvim
 function nvimconfig { Set-Location "C:\Users\Hugo\AppData\Local\nvim\" }
 
 function nvimundo { 
-  $undoDir = "C:/Users/Hugo/AppData/Local/nvim-data/undo"
-  $daysThreshold = 30 * 12
+    $undoDir = "C:/Users/Hugo/AppData/Local/nvim-data/undo"
+    $daysThreshold = 60 * 12
 
-  Get-ChildItem -Path $undoDir -File | Where-Object {
-    $_.LastWriteTime -lt (Get-Date).AddDays(-$daysThreshold)
-  } | Remove-Item -Force
-  Write-Output "Removed undo files older than $daysThreshold days"
+    Get-ChildItem -Path $undoDir -File | Where-Object {
+        $_.LastWriteTime -lt (Get-Date).AddDays(-$daysThreshold)
+    } | Remove-Item -Force
+    Write-Output "Removed undo files older than $daysThreshold days"
 }
 
 function nvimclean {
-  if (Get-Process -Name "nvim" -ErrorAction SilentlyContinue) {
-    Write-Host "Neovim is running."
-  } else {
-    Remove-Item C:\Users\Hugo\AppData\Local\nvim-data\shada\main.shada.tmp.* 
-    Write-Output "Shada files deleted"
-    Remove-Item C:\Users\Hugo\AppData\Local\nvim-data\swap\*.*
-    Write-Output "Swap files deleted"
-    nvimundo
-  }
+    if (Get-Process -Name "nvim" -ErrorAction SilentlyContinue) {
+        Write-Host "Neovim is running."
+    }
+    else {
+        Remove-Item C:\Users\Hugo\AppData\Local\nvim-data\shada\main.shada.tmp.* 
+        Write-Output "Shada files deleted"
+        Remove-Item C:\Users\Hugo\AppData\Local\nvim-data\swap\*.*
+        Write-Output "Swap files deleted"
+        nvimundo
+    }
 }
 
 function restartKanata {
-  & "D:\Users\Hugo\Documents\Scripts\Restart Kanata.bat"
+    & "D:\Users\Hugo\Documents\Scripts\Restart Kanata.bat"
 }
 
 function getInstalledFonts { Get-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts" }
@@ -315,11 +269,6 @@ function getInstalledFonts { Get-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Wi
 
 # Set-Alias nvim -Value "C:\Program Files\Neovide\neovide.exe"
 
-function c { Set-Location -Path C:\ }
-function d { Set-Location -Path D:\ }
-function j { Set-Location -Path J:\ }
-function k { Set-Location -Path K:\ }
-
 Remove-Item Alias:ps -Force -ErrorAction SilentlyContinue
 
 function ps { Get-Process *$args* }
@@ -327,6 +276,7 @@ function ps { Get-Process *$args* }
 function pkill {
     Get-Process $args -ErrorAction SilentlyContinue | Stop-Process
 }
+
 Set-Alias pk -Value pkill
 
 function sed($file, $find, $replace) {
@@ -344,11 +294,12 @@ function tr { Remove-ItemSafely($args) }
 
 Set-Alias trash -Value tr
 
-function ddu { Invoke-Item "C:\ProgramData\chocolatey\bin\Display Driver Uninstaller.exe"}
+function ddu { Invoke-Item "C:\ProgramData\chocolatey\bin\Display Driver Uninstaller.exe" }
 
-function chococlean { & "C:\Aplications\BCURRAN3\Choco Outdated.bat"}
+function chococlean { & "C:\Aplications\BCURRAN3\Choco Outdated.bat" }
 
 Remove-Item Alias:ls -ErrorAction SilentlyContinue
+
 function ls($params) { Get-ChildItem $params | Format-Wide -Column 4 }
 
 
@@ -378,31 +329,19 @@ Register-ArgumentCompleter -CommandName dnsChange -ParameterName params -ScriptB
 }
 
 
-Set-Alias df -Value get-volume
-
-Set-Alias -Name showdns -Value Get-DnsClient 
-
-Set-Alias -Name list -Value Get-ChildItem
-
-Set-Alias -Name ll -Value Get-ChildItem
-
-function la { Get-ChildItem -Path . -Force | Format-Table -AutoSize }
-
-Set-Alias -Name sysinfo -Value Get-ComputerInfo
-
-Set-Alias -Name htop -Value ntop
 
 # # Move up a directory with u or multiple with u{number}
 function u { Set-Location .. }
 # for($i = 1; $i -le 5; $i++){
-  # $u =  "".PadLeft($i,"u")
-  # $unum =  "u$i"
-  # $d =  $u.Replace("u","../")
-  # Invoke-Expression "function $u { push-location $d }"
-  # Invoke-Expression "function $unum { push-location $d }"
+# $u =  "".PadLeft($i,"u")
+# $unum =  "u$i"
+# $d =  $u.Replace("u","../")
+# Invoke-Expression "function $u { push-location $d }"
+# Invoke-Expression "function $unum { push-location $d }"
 # }
 
-function restart {
+# Restart Process
+function pres {
     param (
         [Parameter(Mandatory = $true)]
         [string]$Name
@@ -425,11 +364,13 @@ function restart {
         Stop-Process -Id $process.ProcessId -Force -ErrorAction Stop
         Start-Process $exePath
         Write-Host "Restarted process '$Name' from '$exePath'."
-    } catch {
+    }
+    catch {
         Write-Error "Failed to restart process '$Name': $_"
     }
 }
 
+# Slower grep if needed
 function rep {
     param([string]$Pattern)
     process {
@@ -437,24 +378,24 @@ function rep {
     }
 }
 
-function sleepComputer {
-	# load assembly System.Windows.Forms which will be used
-	Add-Type -AssemblyName System.Windows.Forms
+function suspend {
+    # load assembly System.Windows.Forms which will be used
+    Add-Type -AssemblyName System.Windows.Forms
 
-	# set powerstate to suspend (sleep mode)
-	$PowerState = [System.Windows.Forms.PowerState]::Suspend;
+    # set powerstate to suspend (sleep mode)
+    $PowerState = [System.Windows.Forms.PowerState]::Suspend;
 
-	# do not force putting Windows to sleep
-	$Force = $false;
+    # do not force putting Windows to sleep
+    $Force = $false;
 
-	# so you can wake up your computer from sleep
-	$DisableWake = $false;
+    # so you can wake up your computer from sleep
+    $DisableWake = $false;
 
-	# do it! Set computer to sleep
-	[System.Windows.Forms.Application]::SetSuspendState($PowerState, $Force, $DisableWake);
+    # do it! Set computer to sleep
+    [System.Windows.Forms.Application]::SetSuspendState($PowerState, $Force, $DisableWake);
 }
 
-function biosComputer {shutdown /t 0 /r /fw}
+function bios { shutdown /t 0 /r /fw }
 
 function Clear-Cache {
     # add clear cache logic here
@@ -489,8 +430,8 @@ Register-ArgumentCompleter -CommandName changeTheme -ParameterName name -ScriptB
         }
 }
 
-function reloadProfile {
-  & $PROFILE.CurrentUserAllHosts
+function Reset-Profile {
+    & $PROFILE.CurrentUserAllHosts
 }
 
 function changeTheme {
@@ -505,7 +446,7 @@ function changeTheme {
     (Get-Content -Path $filePath) -replace $searchPattern, $replaceText | Set-Content -Path $filePath
 
     Invoke-Expression "oh-my-posh init pwsh --config='C:\Program Files (x86)\oh-my-posh\themes\$name.omp.json' | Invoke-Expression"
-    Invoke-Expression "reloadProfile"
+    Invoke-Expression "Reset-Profile"
 }
 
 $poshTheme = 'C:\Program Files (x86)\oh-my-posh\themes\amro.omp.json'
@@ -514,59 +455,59 @@ Invoke-Expression "oh-my-posh init pwsh --config='$poshTheme' | Invoke-Expressio
 
 $Host.UI.RawUI.WindowTitle = $env:WT_MODE
 
-  # if (-not (Get-Module -ListAvailable -Name Terminal-Icons)) {
-  #   Install-Module -Name Terminal-Icons -Scope CurrentUser -Force -SkipPublisherCheck
-  # }
+# if (-not (Get-Module -ListAvailable -Name Terminal-Icons)) {
+#   Install-Module -Name Terminal-Icons -Scope CurrentUser -Force -SkipPublisherCheck
+# }
 
-  $ChocolateyProfile = "$env:ChocolateyInstall\helpers\chocolateyProfile.psm1"
-  if (Test-Path($ChocolateyProfile)) {
+$ChocolateyProfile = "$env:ChocolateyInstall\helpers\chocolateyProfile.psm1"
+if (Test-Path($ChocolateyProfile)) {
     Import-Module "$ChocolateyProfile"
-  }
+}
 
 $null = Register-EngineEvent -SourceIdentifier 'PowerShell.OnIdle' -MaxTriggerCount 1 -Action {
-# Import Modules and External Profiles
-# Ensure Terminal-Icons module is installed before importing
+    # Import Modules and External Profiles
+    # Ensure Terminal-Icons module is installed before importing
 
-  Import-Module -Name Terminal-Icons
+    Import-Module -Name Terminal-Icons
 
-# Enhanced PowerShell Experience
-# Enhanced PSReadLine Configuration
-  $PSReadLineOptions = @{
-    EditMode = 'Windows'
-      HistoryNoDuplicates = $true
-      HistorySearchCursorMovesToEnd = $true
-      Colors = @{
-        Command = '#87CEEB'  # SkyBlue (pastel)
-          Parameter = '#98FB98'  # PaleGreen (pastel)
-          Operator = '#FFB6C1'  # LightPink (pastel)
-          Variable = '#DDA0DD'  # Plum (pastel)
-          String = '#FFDAB9'  # PeachPuff (pastel)
-          Number = '#B0E0E6'  # PowderBlue (pastel)
-          Type = '#F0E68C'  # Khaki (pastel)
-          Comment = '#D3D3D3'  # LightGray (pastel)
-          Keyword = '#8367c7'  # Violet (pastel)
-          Error = '#FF6347'  # Tomato (keeping it close to red for visibility)
-      }
-    PredictionSource = 'History'
-      PredictionViewStyle = 'ListView'
-      BellStyle = 'None'
-  }
-  Set-PSReadLineOption @PSReadLineOptions
+    # Enhanced PowerShell Experience
+    # Enhanced PSReadLine Configuration
+    $PSReadLineOptions = @{
+        EditMode                      = 'Windows'
+        HistoryNoDuplicates           = $true
+        HistorySearchCursorMovesToEnd = $true
+        Colors                        = @{
+            Command   = '#87CEEB'  # SkyBlue (pastel)
+            Parameter = '#98FB98'  # PaleGreen (pastel)
+            Operator  = '#FFB6C1'  # LightPink (pastel)
+            Variable  = '#DDA0DD'  # Plum (pastel)
+            String    = '#FFDAB9'  # PeachPuff (pastel)
+            Number    = '#B0E0E6'  # PowderBlue (pastel)
+            Type      = '#F0E68C'  # Khaki (pastel)
+            Comment   = '#D3D3D3'  # LightGray (pastel)
+            Keyword   = '#8367c7'  # Violet (pastel)
+            Error     = '#FF6347'  # Tomato (keeping it close to red for visibility)
+        }
+        PredictionSource              = 'History'
+        PredictionViewStyle           = 'ListView'
+        BellStyle                     = 'None'
+    }
+    Set-PSReadLineOption @PSReadLineOptions
 
-# Custom functions for PSReadLine
+    # Custom functions for PSReadLine
     Set-PSReadLineOption -AddToHistoryHandler {
-      param($line)
+        param($line)
         $sensitive = @('password', 'secret', 'token', 'apikey', 'connectionstring')
         $hasSensitive = $sensitive | Where-Object { $line -match $_ }
-      return ($null -eq $hasSensitive)
+        return ($null -eq $hasSensitive)
 
     }
 
-# Improved prediction settings
-  Set-PSReadLineOption -PredictionSource HistoryAndPlugin
+    # Improved prediction settings
+    Set-PSReadLineOption -PredictionSource HistoryAndPlugin
     Set-PSReadLineOption -MaximumHistoryCount 10000
 
-# Custom key handlers
+    # Custom key handlers
     Set-PSReadLineKeyHandler -Key UpArrow -Function HistorySearchBackward
     Set-PSReadLineKeyHandler -Key "Ctrl+p" -Function HistorySearchBackward
     Set-PSReadLineKeyHandler -Key DownArrow -Function HistorySearchForward
@@ -583,5 +524,5 @@ $null = Register-EngineEvent -SourceIdentifier 'PowerShell.OnIdle' -MaxTriggerCo
 
 Set-Alias -Name z -Value __zoxide_z -Option AllScope -Scope Global -Force
 Set-Alias -Name zi -Value __zoxide_zi -Option AllScope -Scope Global -Force
-Invoke-Expression (& { (zoxide init powershell | Out-String)})
+Invoke-Expression (& { (zoxide init powershell | Out-String) })
 function zz { z - }
