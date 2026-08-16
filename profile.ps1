@@ -233,7 +233,7 @@ function ex {
 Set-Alias v -Value nvim
 Set-Alias vim -Value nvim
 
-function nvimconfig { Set-Location "C:\Users\Hugo\AppData\Local\nvim\" }
+function nvimconfig { Set-Location "C:\Users\Hugo\.config\nvim\" }
 
 function nvimundo { 
     $undoDir = "C:/Users/Hugo/AppData/Local/nvim-data/undo"
@@ -279,6 +279,35 @@ function pkill {
 
 Set-Alias pk -Value pkill
 
+# Restart Process
+function pres {
+    param (
+        [Parameter(Mandatory = $true)]
+        [string]$Name
+    )
+
+    $process = Get-CimInstance Win32_Process -Filter "Name = '$Name.exe'" | Select-Object -First 1
+
+    if (-not $process) {
+        Write-Error "Process '$Name' not found."
+        return
+    }
+
+    $exePath = $process.ExecutablePath
+    if (-not $exePath) {
+        Write-Error "Unable to determine executable path for '$Name'."
+        return
+    }
+
+    try {
+        Stop-Process -Id $process.ProcessId -Force -ErrorAction Stop
+        Start-Process $exePath
+        Write-Host "Restarted process '$Name' from '$exePath'."
+    }
+    catch {
+        Write-Error "Failed to restart process '$Name': $_"
+    }
+}
 function sed($file, $find, $replace) {
     (Get-Content $file).replace("$find", $replace) | Set-Content $file
 }
@@ -340,36 +369,6 @@ function u { Set-Location .. }
 # Invoke-Expression "function $unum { push-location $d }"
 # }
 
-# Restart Process
-function pres {
-    param (
-        [Parameter(Mandatory = $true)]
-        [string]$Name
-    )
-
-    $process = Get-CimInstance Win32_Process -Filter "Name = '$Name'" | Select-Object -First 1
-
-    if (-not $process) {
-        Write-Error "Process '$Name' not found."
-        return
-    }
-
-    $exePath = $process.ExecutablePath
-    if (-not $exePath) {
-        Write-Error "Unable to determine executable path for '$Name'."
-        return
-    }
-
-    try {
-        Stop-Process -Id $process.ProcessId -Force -ErrorAction Stop
-        Start-Process $exePath
-        Write-Host "Restarted process '$Name' from '$exePath'."
-    }
-    catch {
-        Write-Error "Failed to restart process '$Name': $_"
-    }
-}
-
 # Slower grep if needed
 function rep {
     param([string]$Pattern)
@@ -378,7 +377,7 @@ function rep {
     }
 }
 
-function suspend {
+function suspend-computer {
     # load assembly System.Windows.Forms which will be used
     Add-Type -AssemblyName System.Windows.Forms
 
