@@ -1,6 +1,9 @@
-$Env:YAZI_FILE_ONE = "C:\Program Files\Git\usr\bin\file.exe"
-$Env:YAZI_FILE_HOME = "C:\Users\Hugo\AppData\Roaming\yazi\config"
-$Env:KOMOREBI_CONFIG_HOME = 'C:\Users\Hugo\.config\komorebi'
+# $Host.UI.RawUI.WindowTitle = "Powershell"
+$env:YAZI_FILE_ONE = "C:\Program Files\Git\usr\bin\file.exe"
+# $env:YAZI_FILE_HOME = "C:\Users\Hugo\AppData\Roaming\yazi\config"
+$env:KOMOREBI_CONFIG_HOME = "C:\Users\Hugo\.config\komorebi"
+$env:RIPGREP_CONFIG_PATH = "C:\Users\Hugo\.config\ripgrep\.ripgreprc"
+$env:LOCAL_BIN_PATH = "C:\Users\Hugo\.local\bin"
 
 Remove-Item Alias:diff -Force -ErrorAction SilentlyContinue
 Remove-Item Alias:sl -Force -ErrorAction SilentlyContinue
@@ -36,7 +39,7 @@ function la { Get-ChildItem -Path . -Force | Format-Table -AutoSize }
 
 Set-Alias chmod -Value icacls.exe
 
-Set-Alias gg -Value gemini
+Set-Alias gg -Value agy
 
 Set-Alias df -Value get-volume
 
@@ -49,6 +52,8 @@ Set-Alias -Name ll -Value Get-ChildItem
 Set-Alias -Name sysinfo -Value Get-ComputerInfo
 
 Set-Alias -Name htop -Value ntop
+
+Set-Alias -Name grep -Value rg
 
 function dnsflush {
     Clear-DnsClientCache
@@ -183,7 +188,6 @@ function sshstart {
     }
 }
 
-
 # git remote add origin
 function grao {
     param (
@@ -199,6 +203,35 @@ function grao {
     git remote add origin $sshUrl
     git branch -M $branchName
     git push -u origin $branchName
+}
+
+function get-gh {
+    param(
+        [Parameter(Mandatory)]
+        [string]$Url
+    )
+
+    $uri = [uri]$Url
+    $parts = $uri.AbsolutePath.Trim('/').Split('/')
+
+    if ($parts.Count -lt 5 -or $parts[2] -ne 'tree') {
+        throw "URL must be in the format: https://github.com/owner/repo/tree/branch/path"
+    }
+
+    $owner = $parts[0]
+    $repo  = $parts[1]
+    $branch = $parts[3]
+    $path = $parts[4..($parts.Count - 1)] -join '/'
+
+    $apiUrl = "repos/$owner/$repo/contents/${path}?ref=$branch"
+
+    gh api $apiUrl |
+        ConvertFrom-Json |
+        ForEach-Object {
+            if ($_.type -eq 'file') {
+                Invoke-WebRequest $_.download_url -OutFile $_.name
+            }
+        }
 }
 
 function eclip { es $args | fzf | clip }
@@ -227,7 +260,9 @@ function ex {
 
     if (Test-Path $selected -PathType Container) {
         __zoxide_z "$selected"
-    } 
+    } else {
+        explorer "$selected"
+    }
 }
 
 Set-Alias v -Value nvim
@@ -258,7 +293,7 @@ function nvimclean {
     }
 }
 
-function restartKanata {
+function restart-kanata {
     & "D:\Users\Hugo\Documents\Scripts\Restart Kanata.bat"
 }
 
@@ -429,7 +464,7 @@ Register-ArgumentCompleter -CommandName changeTheme -ParameterName name -ScriptB
         }
 }
 
-function Reset-Profile {
+function reset-profile {
     & $PROFILE.CurrentUserAllHosts
 }
 
@@ -451,8 +486,6 @@ function changeTheme {
 $poshTheme = 'C:\Program Files (x86)\oh-my-posh\themes\amro.omp.json'
 
 Invoke-Expression "oh-my-posh init pwsh --config='$poshTheme' | Invoke-Expression"
-
-$Host.UI.RawUI.WindowTitle = $env:WT_MODE
 
 # if (-not (Get-Module -ListAvailable -Name Terminal-Icons)) {
 #   Install-Module -Name Terminal-Icons -Scope CurrentUser -Force -SkipPublisherCheck
