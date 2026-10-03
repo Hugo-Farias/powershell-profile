@@ -4,9 +4,14 @@ $env:YAZI_FILE_ONE = "C:\Program Files\Git\usr\bin\file.exe"
 $env:KOMOREBI_CONFIG_HOME = "C:\Users\Hugo\.config\komorebi"
 $env:RIPGREP_CONFIG_PATH = "C:\Users\Hugo\.config\ripgrep\.ripgreprc"
 $env:LOCAL_BIN_PATH = "C:\Users\Hugo\.local\bin"
+$env:FZF_DEFAULT_OPTS = "--layout=reverse --height=40% --border"
 
 Remove-Item Alias:diff -Force -ErrorAction SilentlyContinue
 Remove-Item Alias:sl -Force -ErrorAction SilentlyContinue
+
+function start-backup { & "D:\Users\Hugo\Documents\startup-scripts\rclone-backup.ps1.ps1" }
+
+function cht { curl cht.sh$args }
 
 function c { Set-Location -Path C:\ }
 function d { Set-Location -Path D:\ }
@@ -35,8 +40,6 @@ function tv { luffy $args -b -a play }
 
 function yt { luffy $args -b -a play -p youtube }
 
-function la { Get-ChildItem -Path . -Force | Format-Table -AutoSize }
-
 Set-Alias chmod -Value icacls.exe
 
 Set-Alias gg -Value agy
@@ -45,15 +48,19 @@ Set-Alias df -Value get-volume
 
 Set-Alias -Name showdns -Value Get-DnsClient 
 
-Set-Alias -Name list -Value Get-ChildItem
-
-Set-Alias -Name ll -Value Get-ChildItem
-
 Set-Alias -Name sysinfo -Value Get-ComputerInfo
 
 Set-Alias -Name htop -Value ntop
 
 Set-Alias -Name grep -Value rg
+
+function search-tmux {
+  if ($env:TMUX){
+    tmux list-sessions -F '#S' | fzf | ForEach-Object { tmux switch-client -t $_ }
+  } else {
+    tmux list-sessions -F '#S' | fzf | ForEach-Object { tmux attach-session -t $_ }
+  }
+}
 
 function dnsflush {
     Clear-DnsClientCache
@@ -277,7 +284,7 @@ function nvimundo {
     Get-ChildItem -Path $undoDir -File | Where-Object {
         $_.LastWriteTime -lt (Get-Date).AddDays(-$daysThreshold)
     } | Remove-Item -Force
-    Write-Output "Removed undo files older than $daysThreshold days"
+    Write-Output "Removed undo files written older than $daysThreshold days"
 }
 
 function nvimclean {
@@ -364,8 +371,13 @@ function chococlean { & "C:\Aplications\BCURRAN3\Choco Outdated.bat" }
 
 Remove-Item Alias:ls -ErrorAction SilentlyContinue
 
-function ls($params) { Get-ChildItem $params | Format-Wide -Column 4 }
+function ls { Get-ChildItem $args | Format-Wide -Column 4 }
 
+function la { Get-ChildItem $args -Force | Format-Table -AutoSize }
+
+Set-Alias -Name list -Value Get-ChildItem
+
+Set-Alias -Name ll -Value Get-ChildItem
 
 function dnsChange {
     param(
@@ -454,7 +466,7 @@ function Clear-Cache {
     Write-Host "Cache clearing completed." -ForegroundColor Green
 }
 
-Register-ArgumentCompleter -CommandName changeTheme -ParameterName name -ScriptBlock {
+Register-ArgumentCompleter -CommandName switch-theme -ParameterName name -ScriptBlock {
     param($commandName, $parameterName, $wordToComplete, $commandAst, $fakeBoundParameters)
     Get-ChildItem -Path 'C:\Program Files (x86)\oh-my-posh\themes' -Filter *.omp.json |
         ForEach-Object { $_.BaseName -replace '\.omp$', '' } |
@@ -468,7 +480,7 @@ function reset-profile {
     & $PROFILE.CurrentUserAllHosts
 }
 
-function changeTheme {
+function switch-theme {
     param (
         [Parameter(Mandatory)]
         [string]$name
@@ -529,7 +541,7 @@ $null = Register-EngineEvent -SourceIdentifier 'PowerShell.OnIdle' -MaxTriggerCo
     # Custom functions for PSReadLine
     Set-PSReadLineOption -AddToHistoryHandler {
         param($line)
-        $sensitive = @('password', 'secret', 'token', 'apikey', 'connectionstring')
+        $sensitive = @('password', 'token', 'apikey', 'connectionstring')
         $hasSensitive = $sensitive | Where-Object { $line -match $_ }
         return ($null -eq $hasSensitive)
 
@@ -552,6 +564,10 @@ $null = Register-EngineEvent -SourceIdentifier 'PowerShell.OnIdle' -MaxTriggerCo
     Set-PSReadLineKeyHandler -Chord 'Ctrl+RightArrow' -Function ForwardWord
     Set-PSReadLineKeyHandler -Chord 'Ctrl+z' -Function Undo
     Set-PSReadLineKeyHandler -Chord 'Ctrl+y' -Function Redo
+    # Set-PSReadLineKeyHandler -Chord 'Alt+f' -Function search-tmux
+    # Set-PSReadLineKeyHandler -Chord 'Alt+f' -ScriptBlock {
+    #   search-tmux
+    # }
 }
 
 Set-Alias -Name z -Value __zoxide_z -Option AllScope -Scope Global -Force
